@@ -3,8 +3,6 @@ package main
 import ( 
     "fmt"
 	"log"
-	"os"
-	"os/signal"
 
 	amqp "github.com/rabbitmq/amqp091-go"
     "github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
@@ -42,8 +40,39 @@ func main() {
     }
     fmt.Printf("Queue %v declared and bound!\n", queue.Name)
 
-    signalChan := make(chan os.Signal, 1)
-    signal.Notify(signalChan, os.Interrupt)
-    <- signalChan
-    fmt.Println("Program shutting down, closing connection")
+    newGameState := gamelogic.NewGameState(username)
+
+    for {
+
+        userInput := gamelogic.GetInput()
+        if len(userInput) == 0 {
+            continue
+        }
+            
+        switch word := userInput[0]; word {
+        case "spawn":
+            err = newGameState.CommandSpawn(userInput)
+            if err != nil {
+                fmt.Println(err)
+                continue
+            }
+        case "move":
+            _, err := newGameState.CommandMove(userInput)
+            if err != nil {
+                fmt.Println(err)
+                continue
+            }
+        case "status":
+            newGameState.CommandStatus()
+        case "help":
+            gamelogic.PrintClientHelp()
+        case "spam":
+            fmt.Println("Spamming not allowed yet!")
+        case "quit":
+            gamelogic.PrintQuit()
+            return
+        default:
+            fmt.Println("could not find valid command as first argument")
+        }
+    }
 }
