@@ -34,13 +34,25 @@ func main() {
 
         newCh, err := conn.Channel()
 
+        _, queue, err := pubsub.DeclareAndBind(
+            conn, 
+            routing.ExchangePerilTopic, 
+            routing.GameLogSlug, 
+            routing.GameLogSlug+"."+"*", 
+            pubsub.SimpleQueueDurable,
+        ) 
+        if err != nil {
+            log.Fatalf("could not subscribe to pause: %v", err)
+        }
+        fmt.Printf("Log queue %v declared and bound!\n", queue.Name)
+
         switch firstWordUserInput := userInput[0]; firstWordUserInput {
         case "pause":
             fmt.Println("sending pause message")
-            pubsub.PublishJSON(newCh, routing.ExchangePerilTopic, routing.GameLogSlug, routing.PlayingState{IsPaused: true}) 
+            pubsub.PublishJSON(newCh, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: true}) 
         case "resume":
             fmt.Println("sending resume message")
-            pubsub.PublishJSON(newCh, routing.ExchangePerilTopic, routing.GameLogSlug, routing.PlayingState{IsPaused: false}) 
+            pubsub.PublishJSON(newCh, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{IsPaused: false}) 
         case "quit":
             fmt.Println("exiting...")
             return
